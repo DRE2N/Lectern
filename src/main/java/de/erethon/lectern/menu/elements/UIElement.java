@@ -64,6 +64,11 @@ public class UIElement {
         handlers.remove(handler);
     }
 
+    public Set<ClickHandler> handlers() {
+        return handlers;
+
+    }
+
     public void clearHandlers() {
         handlers.clear();
     }

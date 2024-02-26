@@ -7,27 +7,26 @@ import de.erethon.lectern.menu.elements.UIElement;
 import net.minecraft.core.NonNullList;
 import net.minecraft.network.protocol.game.ClientboundContainerSetContentPacket;
 import net.minecraft.world.item.ItemStack;
-import org.bukkit.craftbukkit.v1_20_R3.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.Nullable;
 
+import java.awt.Image;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public class LecternMenu {
 
     private final Lectern lectern;
-    private final Player player;
     private final Map<Integer, Set<ClickHandler>> handlers = new HashMap<>();
     private final Set<UIElement> elements = new HashSet<>();
+    private Image background;
     private int size = 54;
 
-    public LecternMenu(Player player) {
+    public LecternMenu() {
         this.lectern = Lectern.get();
-        this.player = player;
     }
 
     public void addElement(UIElement element) {
@@ -89,7 +88,7 @@ public class LecternMenu {
         }
     }
 
-    public void open() {
+    public void open(Player player) {
         lectern.addOpenMenu(player, this);
     }
 
@@ -108,62 +107,44 @@ public class LecternMenu {
         int slotIndex = 0;
         for (UIElement element : elements) {
             slotIndex = Lectern.xyToSlot(element.x(), element.y());
+            int originalSlotIndex = slotIndex;
             if (element instanceof Changing ch) {
                 stacks.put(slotIndex, ch.getContentItem());
             } else {
                 stacks.put(slotIndex, element.asItem());
             }
+            handlers.put(slotIndex, element.handlers());
             if (element.width() > 1) {
                 for (int i = 1; i < element.width(); i++) {
-                    stacks.put(slotIndex + i, ItemStack.EMPTY);
+                    stacks.put(originalSlotIndex + i, element.asItem());
+                    handlers.put(originalSlotIndex + i, element.handlers());
+                    if (element.height() > 1) {
+                        stacks.put(originalSlotIndex + i + 9, element.asItem());
+                        handlers.put(originalSlotIndex + i + 9, element.handlers());
+                    }
                 }
             }
             if (element.height() > 1) {
                 for (int i = 1; i < element.height(); i++) {
-                    stacks.put(slotIndex + i * 9, ItemStack.EMPTY);
+                    stacks.put(originalSlotIndex + i * 9, element.asItem());
+                    handlers.put(originalSlotIndex + i * 9, element.handlers());
                 }
             }
         }
         ArrayList<ItemStack> list = new ArrayList<>();
-        for (int i = 0; i < 54; i++) {
+        for (int i = 0; i < 90; i++) { // 89 slots for the full inventory
             list.add(stacks.getOrDefault(i, ItemStack.EMPTY));
         }
         NonNullList<ItemStack> nonNullList = NonNullList.of(ItemStack.EMPTY, list.toArray(new ItemStack[0]));
         return new ClientboundContainerSetContentPacket(id, 0, nonNullList, ItemStack.EMPTY);
     }
 
-    public ClientboundContainerSetContentPacket getLowerContentPacket() {
-        int y;
-        HashMap<Integer, ItemStack> stacks = new HashMap<>();
-        int slotIndex = 0;
-        for (UIElement element : elements) {
-            if (element.y() <= 6) {
-                continue;
-            }
-            y = element.y() - 6;
-            slotIndex = Lectern.xyToSlot(element.x(), element.y());
-            if (element instanceof Changing ch) {
-                stacks.put(slotIndex, ch.getContentItem());
-            } else {
-                stacks.put(slotIndex, element.asItem());
-            }
-            if (element.width() > 1) {
-                for (int i = 1; i < element.width(); i++) {
-                    stacks.put(slotIndex + i, ItemStack.EMPTY);
-                }
-            }
-            if (element.height() > 1) {
-                for (int i = 1; i < element.height(); i++) {
-                    stacks.put(slotIndex + i * 9, ItemStack.EMPTY);
-                }
-            }
-        }
-        ArrayList<ItemStack> list = new ArrayList<>();
-        for (int i = 0; i < 54; i++) {
-            list.add(stacks.getOrDefault(i, ItemStack.EMPTY));
-        }
-        NonNullList<ItemStack> nonNullList = NonNullList.of(ItemStack.EMPTY, list.toArray(new ItemStack[0]));
-        return new ClientboundContainerSetContentPacket(0, 0, nonNullList, ItemStack.EMPTY);
+    public void setBackground(Image background) {
+        this.background = background;
+    }
+
+    public @Nullable Image getBackground() {
+        return background;
     }
 
 

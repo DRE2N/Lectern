@@ -25,26 +25,28 @@ public class ImageGenerator {
 
     private final LecternMenu menu;
     private final Image background;
+    private final int id;
 
     private final List<GenerationEntry> entries = new ArrayList<>();
 
-    public ImageGenerator(LecternMenu menu, Image background) {
+    public ImageGenerator(LecternMenu menu, Image background, int id) {
         this.menu = menu;
         this.background = background;
+        this.id = id;
     }
 
     public void generate() {
         int slotIndex = 0;
         for (UIElement element : menu.getElements()) {
-            if (element instanceof Texturable) {
-                Image texture = ((Texturable) element).getTexture();
+            if (element instanceof Texturable texturable && texturable.getTexture() != null) {
+                Image texture = texturable.getTexture();
                 int x = element.x();
                 int y = element.y();
                 int width = element.width();
                 int height = element.height();
                 Vec2 size = Lectern.slotToXY(slotIndex);
-                int adjustedX = (int) (x * WIDTH_ONE_SLOT * size.x + BORDER);
-                int adjustedY = (int) (y * HEIGHT_ONE_SLOT * size.y + BORDER_TOP);
+                int adjustedX = (int) ((x + size.x) * WIDTH_ONE_SLOT + BORDER);
+                int adjustedY = (int) ((y + size.y) * HEIGHT_ONE_SLOT + BORDER_TOP);
                 entries.add(new GenerationEntry(texture, adjustedX, adjustedY, width * WIDTH_ONE_SLOT, height * HEIGHT_ONE_SLOT));
             }
             slotIndex++;
@@ -73,7 +75,11 @@ public class ImageGenerator {
     }
 
     private void saveImage(Image image) throws IOException {
-        File file = new File(Bukkit.getPluginsFolder(), "lectern.png");
+        File folder = new File(Bukkit.getPluginsFolder(), "Lectern/resourcepack/assets/lectern/textures/gui");
+        if (!folder.exists()) {
+            folder.mkdirs();
+        }
+        File file = new File(folder, id + ".png");
         ImageIO.write((BufferedImage) image, "png", file);
     }
 
